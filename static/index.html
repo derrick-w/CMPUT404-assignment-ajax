@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Abram Hindle
+        Copyright 2019 Derrick Wai
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -32,26 +32,35 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
 
-function sendJSONXMLHTTPRequest(url, objects, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState==4) {
-            try {
-                if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
-                }
-            } 
-            catch(e) {
-                alert('Error: ' + e.name);
-            }
-        }
-    };
+function sendJSONXMLHTTPRequest(url, entity) {
+
+    fetch (url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify(entity)
+    })
+
+    // var xhr = new XMLHttpRequest();
+    // xhr.onreadystatechange = function () {
+    //     if (xhr.readyState==4) {
+    //         try {
+    //             if (xhr.status==200) {
+    //                 //XXX: parse some JSON from the request!
+    //                 //XXX: Pass the data to the callback!
+    //             }
+    //         } 
+    //         catch(e) {
+    //             alert('Error: ' + e.name);
+    //         }
+    //     }
+    // };
     //XXX: POST to a URL
     //XXX: set the mimetype and the accept headers!
     // Remember to use application/json !
 }
-
 
 world = {};
 
@@ -133,12 +142,14 @@ function getPosition(e) {
 	}
 }
 
+baseUrl = "http://"+location.hostname+":5000/";
 
 function addEntity(entity, data) {
     world[entity] = data;
-    drawNextFrame(); // (but should we?)
+    // drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just  modified!
-
+    let url = baseUrl + "entity/" + entity;
+    sendJSONXMLHTTPRequest(url, world[entity]);
 }
 
 var counter = 0;
@@ -247,21 +258,33 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'orange'});    
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    randcolour = 'rgb(' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ')';
+    // random color generation from https://www.sitepoint.com/generating-random-color-values/
+    // console.log(randcolour);
+    addEntityWithoutName({'x':x,'y':y,'colour':randcolour,
+                          'radius':2});
 });
-
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    let url = baseUrl + "world";
+    fetch(url).then(function(response) {
+        return response.json();
+    })
+    .then(function(newworld) {
+        if (JSON.stringify(world) != JSON.stringify(newworld)) {
+            world = newworld;
+            drawNextFrame();
+        }
+    });
     drawFrame();
 }
 
